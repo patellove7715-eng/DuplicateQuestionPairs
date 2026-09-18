@@ -1,0 +1,40 @@
+# Virtual Environment
+.venv/
+venv/
+ENV/
+env/
+
+# IDE & Editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Python cache & compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Large Model & Pickle Files (exceed GitHub's 100MB limit)
+*.pkl
+*.pickle
+*.joblib
+*.h5
+*.onnx
+*.bin
+
+# Large Data files
+*.csv
+*.tsv
+*.zip
+*.tar.gz
+*.parquet
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Streamlit
+.streamlit/secrets.toml
