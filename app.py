@@ -1,8 +1,8 @@
 import streamlit as st
 import helper
 import pickle
+import gzip
 import os
-import urllib.request
 
 st.set_page_config(
     page_title="Quora Duplicate Question Pairs",
@@ -11,67 +11,39 @@ st.set_page_config(
 )
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL_PATH = os.path.join(BASE_DIR, 'model.pkl')
-
-# Optional custom download URL via Streamlit Secrets or Environment Variable
-DEFAULT_MODEL_URL = "https://github.com/patellove7715-eng/DuplicateQuestionPairs/releases/download/v1.0.0/model.pkl"
-
-def get_model_url():
-    try:
-        if "MODEL_URL" in st.secrets:
-            return st.secrets["MODEL_URL"]
-    except Exception:
-        pass
-    return os.environ.get("MODEL_URL", DEFAULT_MODEL_URL)
-
-def download_model(url, target_path):
-    try:
-        urllib.request.urlretrieve(url, target_path)
-        return True
-    except Exception:
-        if os.path.exists(target_path):
-            try:
-                os.remove(target_path)
-            except OSError:
-                pass
-        return False
+MODEL_GZ_PATH = os.path.join(BASE_DIR, 'model.pkl.gz')
+MODEL_PKL_PATH = os.path.join(BASE_DIR, 'model.pkl')
 
 @st.cache_resource
 def load_model():
-    if not os.path.exists(MODEL_PATH) or os.path.getsize(MODEL_PATH) == 0:
-        url = get_model_url()
-        with st.spinner("📦 Downloading trained model file (approx. 156MB) for the first time... Please wait a moment."):
-            success = download_model(url, MODEL_PATH)
-            if not success or not os.path.exists(MODEL_PATH) or os.path.getsize(MODEL_PATH) == 0:
-                return None
-    try:
-        with open(MODEL_PATH, 'rb') as f:
-            return pickle.load(f)
-    except Exception:
-        return None
+    # 1. First try loading the bundled compressed model (24MB, included in repo)
+    if os.path.exists(MODEL_GZ_PATH) and os.path.getsize(MODEL_GZ_PATH) > 0:
+        try:
+            with gzip.open(MODEL_GZ_PATH, 'rb') as f:
+                return pickle.load(f)
+        except Exception as e:
+            st.warning(f"Note loading compressed model: {e}")
+
+    # 2. Fallback to uncompressed model.pkl if available locally
+    if os.path.exists(MODEL_PKL_PATH) and os.path.getsize(MODEL_PKL_PATH) > 0:
+        try:
+            with open(MODEL_PKL_PATH, 'rb') as f:
+                return pickle.load(f)
+        except Exception as e:
+            st.warning(f"Note loading uncompressed model: {e}")
+
+    return None
 
 st.title("❓ Quora Duplicate Question Pairs")
 st.markdown(
     "Detect whether two questions have the same meaning or intent using Machine Learning & NLP."
 )
 
-model = load_model()
+with st.spinner("Loading machine learning model..."):
+    model = load_model()
 
 if model is None:
-    st.error("⚠️ **Model file (`model.pkl`) is missing on Streamlit Cloud.**")
-    st.markdown(
-        """
-        Because `model.pkl` exceeds GitHub's **100 MB** file limit, it is excluded by `.gitignore`.
-
-        ### 🔧 How to Fix in 2 Minutes:
-        1. **Create a GitHub Release:**
-           - Go to: [GitHub Releases New](https://github.com/patellove7715-eng/DuplicateQuestionPairs/releases/new)
-           - Enter tag name: `v1.0.0` and title: `Initial Model Release`
-           - Drag & drop your local `model.pkl` (156MB) into the **"Attach binaries by dropping them here"** box.
-           - Click **Publish release**.
-        2. Refresh this Streamlit app! It will automatically download and cache the model.
-        """
-    )
+    st.error("⚠️ **Model file could not be loaded.** Please check repository files.")
     st.stop()
 
 col1, col2 = st.columns(2)

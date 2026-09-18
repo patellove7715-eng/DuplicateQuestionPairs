@@ -17,13 +17,16 @@ __pycache__/
 *.so
 .pytest_cache/
 
-# Large Model & Pickle Files (exceed GitHub's 100MB limit)
+# Large Model & Raw Pickle Files (>100MB)
 *.pkl
 *.pickle
 *.joblib
 *.h5
 *.onnx
 *.bin
+
+# Allow compressed model (24MB, well under GitHub 100MB limit)
+!model.pkl.gz
 
 # Large Data files
 *.csv
